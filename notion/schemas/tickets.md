@@ -7,7 +7,8 @@ Created by workflow B (and `/api/support-request`); updated by `/api/ticket-post
 | 工單標題 | Title | system |
 | 工單編號 | Text | system (e.g. `SR20260701...` — the postback lookup key) |
 | 狀態 | Status | n8n / LINE postback |
-| 優先級 | Select | system / n8n |
+| 急迫度 | Select (一般 / 今天需回覆 / 急件) | system, from the LIFF form |
+| 優先級 | Select (普通 / 高 / 緊急) | system / n8n |
 | 類型 | Select | system |
 | 來源 | Select | system |
 | LINE User ID | Text | system |
