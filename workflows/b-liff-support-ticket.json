@@ -1,0 +1,102 @@
+{
+  "name": "B｜LIFF 人工工單流程｜建單 + 推工作群",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "liff-support",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "e1641476-25b0-4c45-adf3-ebff3da214dd",
+      "name": "Webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ticket = $json.body || $json;\nconst notification = ticket.notification || {};\nconst groupId = notification.lineGroupId || ticket.lineGroupId || '';\nconst mentionUserIds = notification.mentionUserIds || [];\nconst shouldMention = Boolean(notification.shouldMention && mentionUserIds.length);\n\nif (!groupId) {\n  return [];\n}\n\nconst categoryMap = {\n  '訂單問題': '訂單問題',\n  '商品報價': '商品問題',\n  '配送安排': '配送問題',\n  '帳款月結': '客服問題',\n  '其他': '客服問題',\n};\n\nconst category = categoryMap[ticket.topic] || ticket.topic || '客服問題';\nconst priorityMap = { '急件': '緊急', '今天需回覆': '高', '一般': '普通' };\nconst priority = priorityMap[ticket.urgency] || ticket.urgency || '普通';\nconst issueId = ticket.requestId || ticket.issueId || '未填';\nconst createdAt = ticket.createdAt ? new Date(ticket.createdAt) : new Date();\nconst createdAtLabel = `${String(createdAt.getMonth() + 1).padStart(2, '0')}/${String(createdAt.getDate()).padStart(2, '0')} ${String(createdAt.getHours()).padStart(2, '0')}:${String(createdAt.getMinutes()).padStart(2, '0')}`;\n\nfunction text(value, options = {}) {\n  return {\n    type: 'text',\n    text: String(value || '未填'),\n    color: options.color || '#4A4A4A',\n    size: options.size || 'sm',\n    weight: options.weight,\n    wrap: options.wrap ?? true,\n    flex: options.flex,\n    align: options.align,\n    margin: options.margin,\n  };\n}\n\nfunction labelValue(label, value, options = {}) {\n  return {\n    type: 'box',\n    layout: 'vertical',\n    spacing: 'xs',\n    margin: options.margin || 'md',\n    contents: [\n      text(label, { size: 'xs', color: '#8A8A8A', weight: 'bold' }),\n      text(value, { size: options.valueSize || 'sm', weight: 'bold', color: '#4A4A4A' }),\n    ],\n  };\n}\n\nfunction postbackButton(label, data, options = {}) {\n  return {\n    type: 'button',\n    style: options.style || 'primary',\n    height: 'sm',\n    color: options.color || '#6F7F8F',\n    margin: options.margin || 'lg',\n    action: {\n      type: 'postback',\n      label,\n      data,\n      displayText: options.displayText || label,\n    },\n  };\n}\n\nfunction actionData(action, nextStatus) {\n  const pairs = [\n    ['source', 'line_ticket_flex'],\n    ['issue_id', issueId],\n    ['action', action],\n    ['next_status', nextStatus],\n  ];\n  return pairs.map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');\n}\n\nconst bubble = {\n  type: 'bubble',\n  size: 'mega',\n  styles: {\n    body: { backgroundColor: '#F6F4F0' },\n    footer: { backgroundColor: '#FFFFFF' },\n  },\n  body: {\n    type: 'box',\n    layout: 'vertical',\n    paddingAll: '20px',\n    spacing: 'md',\n    contents: [\n      {\n        type: 'box',\n        layout: 'vertical',\n        spacing: 'xs',\n        contents: [\n          text('工單已送出', { size: 'lg', weight: 'bold', color: '#3E4448' }),\n          text(`新工單・${issueId}`, { size: 'xs', weight: 'bold', color: '#6F7F8F' }),\n        ],\n      },\n      {\n        type: 'box',\n        layout: 'vertical',\n        margin: 'lg',\n        paddingAll: '14px',\n        cornerRadius: '12px',\n        backgroundColor: '#FFFFFF',\n        borderColor: '#E0DED8',\n        borderWidth: '1px',\n        spacing: 'sm',\n        contents: [\n          labelValue('類型', category, { margin: 'none' }),\n          labelValue('客戶', ticket.customerName || '未填'),\n          labelValue('聯絡人', [ticket.contactPerson, ticket.phone].filter(Boolean).join(' ') || '未填'),\n          ...(ticket.relatedOrderId ? [labelValue('相關訂單', ticket.relatedOrderId)] : []),\n          labelValue('內容', ticket.message || '未填', { valueSize: 'md' }),\n          labelValue('優先', priority),\n          labelValue('建立', createdAtLabel),\n          {\n            type: 'separator',\n            margin: 'lg',\n            color: '#E8E1D8',\n          },\n          text('請由群組負責人點擊下���按鈕接手。', { size: 'xs', color: '#8A8A8A' }),\n        ],\n      },\n    ],\n  },\n  footer: {\n    type: 'box',\n    layout: 'vertical',\n    paddingAll: '16px',\n    spacing: 'sm',\n    contents: [\n      postbackButton('我收到工單', actionData('accept', '已受理'), {\n        color: '#6F7F8F',\n        displayText: '我收到工單',\n      }),\n    ],\n  },\n};\n\nconst messages = [];\n\nif (shouldMention) {\n  const substitution = {};\n  const mentionTokens = mentionUserIds.map((userId, index) => {\n    const key = `u${index + 1}`;\n    substitution[key] = { type: 'mention', mentionee: { type: 'user', userId } };\n    return `{${key}}`;\n  });\n\n  messages.push({\n    type: 'textV2',\n    text: `${mentionTokens.join(' ')}\\n有一張急件工單需要協助：${issueId}`,\n    substitution,\n  });\n}\n\nmessages.push({\n  type: 'flex',\n  altText: `新工單 ${issueId} ${category}`,\n  contents: bubble,\n});\n\nreturn [{\n  json: {\n    to: groupId,\n    messages,\n  },\n}];\n"
+      },
+      "id": "2f2684ad-536f-4bd0-9ec8-afa7e81d78ad",
+      "name": "Build LINE Group Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.line.me/v2/bot/message/push",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpBearerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ to: $json.to, messages: $json.messages }) }}",
+        "options": {}
+      },
+      "id": "64853bbe-aef4-4dc0-a57e-56ea5338ea47",
+      "name": "Push To LINE Group",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        288,
+        112
+      ],
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "LINE Messaging API (Bearer)"
+        }
+      },
+      "notes": "Assign existing LINE Messaging API bearer credential. This node expects $json.to and $json.messages from Build LINE Group Message."
+    }
+  ],
+  "connections": {
+    "Build LINE Group Message": {
+      "main": [
+        [
+          {
+            "node": "Push To LINE Group",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Build LINE Group Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true,
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "meta": null,
+  "active": false
+}

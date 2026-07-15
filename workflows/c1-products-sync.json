@@ -1,0 +1,565 @@
+{
+  "name": "C1｜Notion 內容同步｜商品 編輯庫→正式庫",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "id": "37fc6a67-a8c5-409c-a140-8fd0ab41ce74",
+      "name": "每天早上 9 點觸發",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        -32
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "https://app.notion.com/p/REPLACE_WITH_PRODUCTS_DRAFT_DB_ID"
+        },
+        "returnAll": true,
+        "simple": false,
+        "filterType": "manual",
+        "filters": {
+          "conditions": [
+            {
+              "key": "同步狀態|select",
+              "type": "select",
+              "condition": "={{ 'does_not_equal' }}",
+              "selectValue": "已同步"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "94e0a6c5-1a38-42dd-af96-d9fb285eefbc",
+      "name": "讀取商品編輯庫(待同步)",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        224,
+        -32
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "Notion API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "function rich(p){ if(!p) return \"\"; if(p.type===\"title\") return (p.title||[]).map(function(t){return t.plain_text;}).join(\"\"); if(p.type===\"rich_text\") return (p.rich_text||[]).map(function(t){return t.plain_text;}).join(\"\"); return \"\"; }\nfunction sel(p){ return (p && p.select && p.select.name) ? p.select.name : \"\"; }\nfunction num(p){ return (p && typeof p.number === \"number\") ? p.number : null; }\nfunction urlv(p){ return (p && p.url) ? p.url : \"\"; }\nconst allowedCategory = [\"當季水果\",\"進口水果\",\"禮盒組合\",\"學校團膳\",\"公司訂購\"];\nconst allowedStock = [\"有貨\",\"少量\",\"售完\",\"預購\"];\nconst items = $input.all();\nconst skuCount = {};\nfor (const it of items) { const s = rich((it.json.properties||{})[\"編號\"]).trim(); if (s) skuCount[s] = (skuCount[s]||0)+1; }\nconst out = [];\nfor (const it of items) {\n  const props = it.json.properties || {};\n  const name = rich(props[\"商品名稱\"]).trim();\n  const sku = rich(props[\"編號\"]).trim();\n  const category = sel(props[\"分類\"]);\n  const spec = rich(props[\"規格\"]).trim();\n  const unit = rich(props[\"單位\"]).trim();\n  const priceRaw = num(props[\"價格\"]);\n  const stock = sel(props[\"庫存狀態\"]);\n  const imageUrl = urlv(props[\"圖片網址\"]).trim();\n  const sortRaw = num(props[\"排序\"]);\n  const freshness = rich(props[\"鮮度備註\"]);\n  const shelfRaw = sel(props[\"上架狀態\"]);\n  const desc = rich(props[\"說明\"]);\n  const errors = [];\n  if (!sku) errors.push(\"缺少編號\"); else if (skuCount[sku] > 1) errors.push(\"編號重複\");\n  if (!name) errors.push(\"缺少商品名稱\");\n  if (!spec) errors.push(\"缺少規格\");\n  if (!unit) errors.push(\"缺少單位\");\n  if (!category) errors.push(\"缺少分類\"); else if (!allowedCategory.includes(category)) errors.push(\"分類不在允許清單\");\n  const price = (priceRaw === null) ? NaN : Number(priceRaw);\n  if (isNaN(price) || price < 0) errors.push(\"價格必須是數字且大於等於0\");\n  if (stock && !allowedStock.includes(stock)) errors.push(\"庫存狀態不在允許清單\");\n  if (imageUrl && imageUrl.toLowerCase().indexOf(\"http\") !== 0) errors.push(\"圖片網址需以http開頭\");\n  const sortOrder = (typeof sortRaw === \"number\") ? sortRaw : 999;\n  const shelf = (shelfRaw === \"停用\") ? \"停用\" : \"啟用\";\n  out.push({ json: { draftPageId: it.json.id, \"編號\": sku, \"商品名稱\": name, \"分類\": category, \"說明\": desc, \"規格\": spec, \"單位\": unit, \"價格\": isNaN(price) ? 0 : price, \"庫存狀態\": stock || \"有貨\", \"圖片網址\": imageUrl, \"排序\": sortOrder, \"鮮度備註\": freshness, \"上架狀態\": shelf, _valid: errors.length === 0, _error: errors.join(\"、\") } });\n}\nreturn out;"
+      },
+      "id": "4bf37d0d-cc7b-4c52-a128-bbeaa78b7c23",
+      "name": "驗證商品",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        -32
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json._valid }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "01762f51-94f1-4ca1-84a5-758caab8e174",
+      "name": "驗證通過?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        672,
+        -32
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "REPLACE_WITH_PRODUCTS_LIVE_DB_ID"
+        },
+        "limit": 1,
+        "filterType": "manual",
+        "filters": {
+          "conditions": [
+            {
+              "key": "編號|rich_text",
+              "type": "rich_text",
+              "condition": "equals",
+              "richTextValue": "={{ $json.編號 }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7bea0d5a-4db9-4d88-8474-98ec768a68ca",
+      "name": "查正式庫是否已存在",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        896,
+        -128
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "notionApi": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "Notion API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.id }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "58c8af43-12ce-4c41-afd4-66c05c8d2334",
+      "name": "正式庫已存在?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1120,
+        -128
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "update",
+        "pageId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.id }}"
+        },
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "商品名稱|title",
+              "title": "={{ $('驗證商品').item.json.商品名稱 }}"
+            },
+            {
+              "key": "編號|rich_text",
+              "textContent": "={{ $('驗證商品').item.json.編號 }}"
+            },
+            {
+              "key": "分類|select",
+              "selectValue": "={{ $('驗證商品').item.json.分類 }}"
+            },
+            {
+              "key": "說明|rich_text",
+              "textContent": "={{ $('驗證商品').item.json.說明 }}"
+            },
+            {
+              "key": "規格|rich_text",
+              "textContent": "={{ $('驗證商品').item.json.規格 }}"
+            },
+            {
+              "key": "單位|rich_text",
+              "textContent": "={{ $('驗證商品').item.json.單位 }}"
+            },
+            {
+              "key": "價格|number",
+              "numberValue": "={{ $('驗證商品').item.json.價格 }}"
+            },
+            {
+              "key": "庫存狀態|select",
+              "selectValue": "={{ $('驗證商品').item.json.庫存狀態 }}"
+            },
+            {
+              "key": "圖片網址|url",
+              "ignoreIfEmpty": true,
+              "urlValue": "={{ $('驗證商品').item.json.圖片網址 }}"
+            },
+            {
+              "key": "排序|number",
+              "numberValue": "={{ $('驗證商品').item.json.排序 }}"
+            },
+            {
+              "key": "鮮度備註|rich_text",
+              "textContent": "={{ $('驗證商品').item.json.鮮度備註 }}"
+            },
+            {
+              "key": "上架狀態|select",
+              "selectValue": "={{ $('驗證商品').item.json.上架狀態 }}"
+            },
+            {
+              "key": "來源更新時間|date",
+              "date": "={{ $now.toISO() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fdd4375b-dba1-44ce-ad64-7c7dabcd675e",
+      "name": "更新正式庫",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        1344,
+        -224
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "Notion API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "update",
+        "pageId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('驗證商品').item.json.draftPageId }}"
+        },
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "同步狀態|select",
+              "selectValue": "已同步"
+            },
+            {
+              "key": "錯誤訊息|rich_text"
+            },
+            {
+              "key": "最後同步時間|date",
+              "date": "={{ $now.toISO() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0c74baad-f401-4f1e-ac78-dcbc780b2cb4",
+      "name": "回寫編輯庫=已同步",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        1568,
+        -128
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "Notion API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "databaseId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "REPLACE_WITH_PRODUCTS_LIVE_DB_ID"
+        },
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "商品名稱|title",
+              "title": "={{ $('驗證商品').item.json.商品名稱 }}"
+            },
+            {
+              "key": "編號|rich_text",
+              "textContent": "={{ $('驗證商品').item.json.編號 }}"
+            },
+            {
+              "key": "分類|select",
+              "selectValue": "={{ $('驗證商品').item.json.分類 }}"
+            },
+            {
+              "key": "說明|rich_text",
+              "textContent": "={{ $('驗證商品').item.json.說明 }}"
+            },
+            {
+              "key": "規格|rich_text",
+              "textContent": "={{ $('驗證商品').item.json.規格 }}"
+            },
+            {
+              "key": "單位|rich_text",
+              "textContent": "={{ $('驗證商品').item.json.單位 }}"
+            },
+            {
+              "key": "價格|number",
+              "numberValue": "={{ $('驗證商品').item.json.價格 }}"
+            },
+            {
+              "key": "庫存狀態|select",
+              "selectValue": "={{ $('驗證商品').item.json.庫存狀態 }}"
+            },
+            {
+              "key": "圖片網址|url",
+              "ignoreIfEmpty": true,
+              "urlValue": "={{ $('驗證商品').item.json.圖片網址 }}"
+            },
+            {
+              "key": "排序|number",
+              "numberValue": "={{ $('驗證商品').item.json.排序 }}"
+            },
+            {
+              "key": "鮮度備註|rich_text",
+              "textContent": "={{ $('驗證商品').item.json.鮮度備註 }}"
+            },
+            {
+              "key": "上架狀態|select",
+              "selectValue": "={{ $('驗證商品').item.json.上架狀態 }}"
+            },
+            {
+              "key": "來源更新時間|date",
+              "date": "={{ $now.toISO() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "09df6b4a-bfb8-405f-ae17-08478adf27da",
+      "name": "建立到正式庫",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        1344,
+        -32
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "Notion API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "update",
+        "pageId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.draftPageId }}"
+        },
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "同步狀態|select",
+              "selectValue": "有錯誤"
+            },
+            {
+              "key": "錯誤訊息|rich_text",
+              "textContent": "={{ $json._error }}"
+            },
+            {
+              "key": "最後同步時間|date",
+              "date": "={{ $now.toISO() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4372cf85-ef2d-4513-9555-f5de02dda571",
+      "name": "回寫編輯庫=有錯誤",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        896,
+        64
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "Notion API"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "d6492d5e-b74b-4f42-ad5a-c99fc73c58b6",
+      "name": "手動觸發",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        128
+      ]
+    }
+  ],
+  "connections": {
+    "讀取商品編輯庫(待同步)": {
+      "main": [
+        [
+          {
+            "node": "驗證商品",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "驗證商品": {
+      "main": [
+        [
+          {
+            "node": "驗證通過?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "驗證通過?": {
+      "main": [
+        [
+          {
+            "node": "查正式庫是否已存在",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "回寫編輯庫=有錯誤",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "查正式庫是否已存在": {
+      "main": [
+        [
+          {
+            "node": "正式庫已存在?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "正式庫已存在?": {
+      "main": [
+        [
+          {
+            "node": "更新正式庫",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "建立到正式庫",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "更新正式庫": {
+      "main": [
+        [
+          {
+            "node": "回寫編輯庫=已同步",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "建立到正式庫": {
+      "main": [
+        [
+          {
+            "node": "回寫編輯庫=已同步",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "每天早上 9 點觸發": {
+      "main": [
+        [
+          {
+            "node": "讀取商品編輯庫(待同步)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "手動觸發": {
+      "main": [
+        [
+          {
+            "node": "讀取商品編輯庫(待同步)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true,
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "meta": {
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp"
+  },
+  "active": false
+}

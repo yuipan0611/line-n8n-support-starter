@@ -1,0 +1,508 @@
+{
+  "name": "C2｜Notion 內容同步｜FAQ 編輯庫→正式庫",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "id": "066a4f84-6554-4dfc-8c92-39b2c1f710cb",
+      "name": "每天早上 9 點觸發",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "https://app.notion.com/p/REPLACE_WITH_KNOWLEDGE_DRAFT_DB_ID"
+        },
+        "returnAll": true,
+        "simple": false,
+        "filterType": "manual",
+        "filters": {
+          "conditions": [
+            {
+              "key": "同步狀態|select",
+              "type": "select",
+              "condition": "={{ 'does_not_equal' }}",
+              "selectValue": "已同步"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "41256083-f677-4bb8-b2b8-ac8678878d35",
+      "name": "讀取知識庫編輯庫(待同步)",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        224,
+        0
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "Notion API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "function rich(p){ if(!p) return \"\"; if(p.type===\"title\") return (p.title||[]).map(function(t){return t.plain_text;}).join(\"\"); if(p.type===\"rich_text\") return (p.rich_text||[]).map(function(t){return t.plain_text;}).join(\"\"); return \"\"; }\nfunction sel(p){ return (p && p.select && p.select.name) ? p.select.name : \"\"; }\nconst allowedCategory = [\"商品\",\"FAQ訂購\",\"FAQ配送\",\"FAQ付款\",\"FAQ退換貨\",\"FAQ一般\",\"貼圖\"];\nconst items = $input.all();\nconst skuCount = {};\nfor (const it of items) { const s = rich((it.json.properties||{})[\"編號\"]).trim(); if (s) skuCount[s] = (skuCount[s]||0)+1; }\nconst out = [];\nfor (const it of items) {\n  const props = it.json.properties || {};\n  const title = rich(props[\"標題\"]).trim();\n  const sku = rich(props[\"編號\"]).trim();\n  const category = sel(props[\"分類\"]);\n  const content = rich(props[\"內容\"]).trim();\n  const statusRaw = sel(props[\"狀態\"]);\n  const errors = [];\n  if (!sku) errors.push(\"缺少編號\"); else if (skuCount[sku] > 1) errors.push(\"編號重複\");\n  if (!title) errors.push(\"缺少標題\");\n  if (!content) errors.push(\"缺少內容\");\n  if (!category) errors.push(\"缺少分類\"); else if (!allowedCategory.includes(category)) errors.push(\"分類不在允許清單\");\n  const status = (statusRaw === \"停用\") ? \"停用\" : \"啟用\";\n  out.push({ json: { draftPageId: it.json.id, \"標題\": title, \"編號\": sku, \"分類\": category, \"內容\": content, \"狀態\": status, _valid: errors.length === 0, _error: errors.join(\"、\") } });\n}\nreturn out;"
+      },
+      "id": "a7376fca-ec2d-4a05-aecf-657393632010",
+      "name": "驗證FAQ",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json._valid }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "33247ac5-7e73-4791-be41-b7971d6192a9",
+      "name": "驗證通過?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        672,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "REPLACE_WITH_KNOWLEDGE_LIVE_DB_ID"
+        },
+        "limit": 1,
+        "simple": false,
+        "filterType": "manual",
+        "filters": {
+          "conditions": [
+            {
+              "key": "編號|rich_text",
+              "type": "rich_text",
+              "condition": "equals",
+              "richTextValue": "={{ $json.編號 }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "6e8de160-d76c-4f19-9654-a2fa446c6fca",
+      "name": "查正式庫是否已存在",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        880,
+        -128
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "notionApi": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "Notion API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.id }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "f73981b7-800e-4eb6-848b-45164da347bd",
+      "name": "正式庫已存在?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1104,
+        -128
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "update",
+        "pageId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.id }}"
+        },
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "標題|title",
+              "title": "={{ $('驗證FAQ').item.json.標題 }}"
+            },
+            {
+              "key": "編號|rich_text",
+              "textContent": "={{ $('驗證FAQ').item.json.編號 }}"
+            },
+            {
+              "key": "分類|select",
+              "selectValue": "={{ $('驗證FAQ').item.json.分類 }}"
+            },
+            {
+              "key": "內容|rich_text",
+              "textContent": "={{ $('驗證FAQ').item.json.內容 }}"
+            },
+            {
+              "key": "狀態|select",
+              "selectValue": "={{ $('驗證FAQ').item.json.狀態 }}"
+            },
+            {
+              "key": "來源更新時間|date",
+              "date": "={{ $now.toISO() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c4773de4-99ab-4e9f-b624-23ea6b794540",
+      "name": "更新正式庫",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        1328,
+        -224
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "Notion API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "update",
+        "pageId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('驗證FAQ').item.json.draftPageId }}"
+        },
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "同步狀態|select",
+              "selectValue": "已同步"
+            },
+            {
+              "key": "錯誤訊息|rich_text"
+            },
+            {
+              "key": "最後同步時間|date",
+              "date": "={{ $now.toISO() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "906c8599-7cf3-4ad5-b0ee-1f4e995128e5",
+      "name": "回寫編輯庫=已同步",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        1552,
+        -128
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "Notion API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "databaseId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "REPLACE_WITH_KNOWLEDGE_LIVE_DB_ID"
+        },
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "標題|title",
+              "title": "={{ $('驗證FAQ').item.json.標題 }}"
+            },
+            {
+              "key": "編號|rich_text",
+              "textContent": "={{ $('驗證FAQ').item.json.編號 }}"
+            },
+            {
+              "key": "分類|select",
+              "selectValue": "={{ $('驗證FAQ').item.json.分類 }}"
+            },
+            {
+              "key": "內容|rich_text",
+              "textContent": "={{ $('驗證FAQ').item.json.內容 }}"
+            },
+            {
+              "key": "狀態|select",
+              "selectValue": "={{ $('驗證FAQ').item.json.狀態 }}"
+            },
+            {
+              "key": "來源更新時間|date",
+              "date": "={{ $now.toISO() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "715b0689-fbfd-4137-bf6d-da6713f412e6",
+      "name": "建立到正式庫",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        1328,
+        -16
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "Notion API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "update",
+        "pageId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.draftPageId }}"
+        },
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "同步狀態|select",
+              "selectValue": "有錯誤"
+            },
+            {
+              "key": "錯誤訊息|rich_text",
+              "textContent": "={{ $json._error }}"
+            },
+            {
+              "key": "最後同步時間|date",
+              "date": "={{ $now.toISO() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "80a5b8bc-5695-4995-b6fa-b6ef6c3bb1f1",
+      "name": "回寫編輯庫=有錯誤",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        880,
+        208
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "Notion API"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "5820c87e-4b61-4f82-8e31-724e7b399ce5",
+      "name": "手動觸發",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        128
+      ]
+    }
+  ],
+  "connections": {
+    "讀取知識庫編輯庫(待同步)": {
+      "main": [
+        [
+          {
+            "node": "驗證FAQ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "驗證FAQ": {
+      "main": [
+        [
+          {
+            "node": "驗證通過?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "驗證通過?": {
+      "main": [
+        [
+          {
+            "node": "查正式庫是否已存在",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "回寫編輯庫=有錯誤",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "查正式庫是否已存在": {
+      "main": [
+        [
+          {
+            "node": "正式庫已存在?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "正式庫已存在?": {
+      "main": [
+        [
+          {
+            "node": "更新正式庫",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "建立到正式庫",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "更新正式庫": {
+      "main": [
+        [
+          {
+            "node": "回寫編輯庫=已同步",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "建立到正式庫": {
+      "main": [
+        [
+          {
+            "node": "回寫編輯庫=已同步",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "每天早上 9 點觸發": {
+      "main": [
+        [
+          {
+            "node": "讀取知識庫編輯庫(待同步)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "手動觸發": {
+      "main": [
+        [
+          {
+            "node": "讀取知識庫編輯庫(待同步)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true,
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "meta": {
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp"
+  },
+  "active": false
+}
