@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1535" height="1024" viewBox="0 0 1535 1024">
+  <rect width="2500" height="1686" fill="#FBFCFA"/>
+  <rect x="0" y="0" width="2500" height="116" fill="#2E7D32"/>
+  <text x="92" y="76" font-size="48" font-weight="900" fill="#FFFFFF" font-family="Arial, PingFang TC, Microsoft JhengHei, sans-serif">示範果舖</text>
+  <text x="380" y="75" font-size="31" font-weight="700" fill="#DDF5E2" font-family="Arial, PingFang TC, Microsoft JhengHei, sans-serif">LINE 客服・下單選單</text>
+  <g transform="translate(0 116)">
+    
+    <g transform="translate(0 0)">
+      <rect x="0" y="0" width="511.6666666666667" height="454" fill="#F1FFF5" stroke="#DCE8DD" stroke-width="4"/>
+      <circle cx="255.83333333333334" cy="205" r="82" fill="#2E7D32"/>
+      <text x="255.83333333333334" y="236" text-anchor="middle" font-size="76" font-weight="900" fill="#FFFFFF">訂</text>
+      <text x="255.83333333333334" y="398" text-anchor="middle" font-size="68" font-weight="900" fill="#17231B">商品訂購</text>
+      <text x="255.83333333333334" y="478" text-anchor="middle" font-size="34" font-weight="700" fill="#667067">看今日水果與價格</text>
+      <rect x="220" y="555" width="71.66666666666669" height="72" rx="20" fill="#2E7D32" opacity="0.11"/>
+      <text x="255.83333333333334" y="603" text-anchor="middle" font-size="32" font-weight="800" fill="#2E7D32">點一下開啟</text>
+    </g>
+
+    <g transform="translate(511.6666666666667 0)">
+      <rect x="0" y="0" width="511.6666666666667" height="454" fill="#FFFFFF" stroke="#DCE8DD" stroke-width="4"/>
+      <circle cx="255.83333333333334" cy="205" r="82" fill="#E35D2F"/>
+      <text x="255.83333333333334" y="236" text-anchor="middle" font-size="76" font-weight="900" fill="#FFFFFF">車</text>
+      <text x="255.83333333333334" y="398" text-anchor="middle" font-size="68" font-weight="900" fill="#17231B">購物車</text>
+      <text x="255.83333333333334" y="478" text-anchor="middle" font-size="34" font-weight="700" fill="#667067">確認數量與配送費</text>
+      <rect x="220" y="555" width="71.66666666666669" height="72" rx="20" fill="#E35D2F" opacity="0.11"/>
+      <text x="255.83333333333334" y="603" text-anchor="middle" font-size="32" font-weight="800" fill="#E35D2F">點一下開啟</text>
+    </g>
+
+    <g transform="translate(1023.3333333333334 0)">
+      <rect x="0" y="0" width="511.6666666666667" height="454" fill="#FFFFFF" stroke="#DCE8DD" stroke-width="4"/>
+      <circle cx="255.83333333333334" cy="205" r="82" fill="#276EF1"/>
+      <text x="255.83333333333334" y="236" text-anchor="middle" font-size="76" font-weight="900" fill="#FFFFFF">單</text>
+      <text x="255.83333333333334" y="398" text-anchor="middle" font-size="68" font-weight="900" fill="#17231B">訂單查詢</text>
+      <text x="255.83333333333334" y="478" text-anchor="middle" font-size="34" font-weight="700" fill="#667067">看配送進度</text>
+      <rect x="220" y="555" width="71.66666666666669" height="72" rx="20" fill="#276EF1" opacity="0.11"/>
+      <text x="255.83333333333334" y="603" text-anchor="middle" font-size="32" font-weight="800" fill="#276EF1">點一下開啟</text>
+    </g>
+
+    <g transform="translate(0 454)">
+      <rect x="0" y="0" width="511.6666666666667" height="454" fill="#FFFFFF" stroke="#DCE8DD" stroke-width="4"/>
+      <circle cx="255.83333333333334" cy="205" r="82" fill="#7A4E2D"/>
+      <text x="255.83333333333334" y="236" text-anchor="middle" font-size="76" font-weight="900" fill="#FFFFFF">員</text>
+      <text x="255.83333333333334" y="398" text-anchor="middle" font-size="68" font-weight="900" fill="#17231B">會員資料</text>
+      <text x="255.83333333333334" y="478" text-anchor="middle" font-size="34" font-weight="700" fill="#667067">月結與收貨資訊</text>
+      <rect x="220" y="555" width="71.66666666666669" height="72" rx="20" fill="#7A4E2D" opacity="0.11"/>
+      <text x="255.83333333333334" y="603" text-anchor="middle" font-size="32" font-weight="800" fill="#7A4E2D">點一下開啟</text>
+    </g>
+
+    <g transform="translate(511.6666666666667 454)">
+      <rect x="0" y="0" width="511.6666666666667" height="454" fill="#FFFFFF" stroke="#DCE8DD" stroke-width="4"/>
+      <circle cx="255.83333333333334" cy="205" r="82" fill="#108A7A"/>
+      <text x="255.83333333333334" y="236" text-anchor="middle" font-size="76" font-weight="900" fill="#FFFFFF">配</text>
+      <text x="255.83333333333334" y="398" text-anchor="middle" font-size="68" font-weight="900" fill="#17231B">配送規則</text>
+      <text x="255.83333333333334" y="478" text-anchor="middle" font-size="34" font-weight="700" fill="#667067">由客服助手回覆</text>
+      <rect x="220" y="555" width="71.66666666666669" height="72" rx="20" fill="#108A7A" opacity="0.11"/>
+      <text x="255.83333333333334" y="603" text-anchor="middle" font-size="32" font-weight="800" fill="#108A7A">點一下開啟</text>
+    </g>
+
+    <g transform="translate(1023.3333333333334 454)">
+      <rect x="0" y="0" width="511.6666666666667" height="454" fill="#FFFFFF" stroke="#DCE8DD" stroke-width="4"/>
+      <circle cx="255.83333333333334" cy="205" r="82" fill="#5F6368"/>
+      <text x="255.83333333333334" y="236" text-anchor="middle" font-size="76" font-weight="900" fill="#FFFFFF">人</text>
+      <text x="255.83333333333334" y="398" text-anchor="middle" font-size="68" font-weight="900" fill="#17231B">人工工單</text>
+      <text x="255.83333333333334" y="478" text-anchor="middle" font-size="34" font-weight="700" fill="#667067">填寫協助需求</text>
+      <rect x="220" y="555" width="71.66666666666669" height="72" rx="20" fill="#5F6368" opacity="0.11"/>
+      <text x="255.83333333333334" y="603" text-anchor="middle" font-size="32" font-weight="800" fill="#5F6368">點一下開啟</text>
+    </g>
+  </g>
+  <rect x="0" y="1558" width="2500" height="128" fill="#FBFCFA" opacity="0.92"/>
+</svg>

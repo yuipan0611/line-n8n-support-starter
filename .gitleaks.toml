@@ -1,0 +1,15 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Build artifacts and documented public examples"
+paths = [
+  '''\.next/''',
+  '''_incoming/''',
+  '''node_modules/''',
+]
+# The secret/body pair in tools/line/line-signature.test.cjs is LINE's public
+# documentation example for webhook signature verification, not a credential.
+regexes = [
+  '''8c570fa6dd201bb328f1c1eac23a96d8''',
+]

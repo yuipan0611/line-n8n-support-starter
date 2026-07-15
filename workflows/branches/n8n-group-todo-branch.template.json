@@ -1,0 +1,75 @@
+{
+  "name": "Demo Fruit Shop LINE 群組待辦查詢 Branch",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "const event = $json.event || $json;\nconst source = event.source || {};\nconst message = event.message || {};\nconst text = message.text || '';\nconst mentionees = message.mention?.mentionees || [];\nconst mentionedSelf = mentionees.some((item) => item.isSelf === true);\nconst isGroup = source.type === 'group' || source.type === 'room';\nconst asksTodos = /待辦|工單|今天|急件|todo/i.test(text);\n\nreturn [{\n  json: {\n    ...$json,\n    isGroupTodoQuery: isGroup && mentionedSelf && asksTodos,\n    replyToken: event.replyToken,\n    groupId: source.groupId || source.roomId || '',\n    userId: source.userId || '',\n    cleanText: text.replace(/@\\S+/g, '').trim(),\n    today: new Date().toISOString().slice(0, 10),\n  },\n}];"
+      },
+      "id": "Detect Group Mention Todo Query",
+      "name": "Detect Group Mention Todo Query",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.isGroupTodoQuery }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "If Group Todo Query",
+      "name": "If Group Todo Query",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [240, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.notion.com/v1/databases/91edd1c75e4e47d5b07542e015a74894/query",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Notion-Version", "value": "2022-06-28" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"filter\": {\n    \"and\": [\n      { \"property\": \"到期日\", \"date\": { \"on_or_before\": $json.today } },\n      { \"property\": \"狀態\", \"status\": { \"does_not_equal\": \"完成\" } }\n    ]\n  },\n  \"sorts\": [\n    { \"property\": \"急迫度\", \"direction\": \"ascending\" },\n    { \"property\": \"到期日\", \"direction\": \"ascending\" }\n  ],\n  \"page_size\": 10\n}"
+      },
+      "id": "Query Today Tickets",
+      "name": "Query Today Tickets",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, -120],
+      "notes": "Assign the existing Notion bearer credential before enabling this branch."
+    },
+    {
+      "parameters": {
+        "jsCode": "const results = $json.results || [];\nconst priorityRank = { '急件': 0, '今天需回覆': 1, '一般': 2 };\n\nconst tickets = results\n  .map((page) => {\n    const props = page.properties || {};\n    return {\n      title: props['工單標題']?.title?.[0]?.plain_text || '未命名工單',\n      priority: props['急迫度']?.select?.name || '一般',\n      owner: props['負責人']?.rich_text?.[0]?.plain_text || '未指派',\n      mentionUserId: props['LINE Mention User ID']?.rich_text?.[0]?.plain_text || '',\n      customer: props['客戶名稱']?.rich_text?.[0]?.plain_text || '',\n      note: props['問題說明']?.rich_text?.[0]?.plain_text || '',\n    };\n  })\n  .sort((a, b) => priorityRank[a.priority] - priorityRank[b.priority]);\n\nif (tickets.length === 0) {\n  return [{ json: { messages: [{ type: 'text', text: '今天目前沒有未完成待辦。' }] } }];\n}\n\nconst substitution = {};\nconst lines = ['今天待辦依急迫度整理：'];\n\ntickets.forEach((ticket, index) => {\n  const key = `u${index + 1}`;\n  const ownerText = ticket.mentionUserId && ticket.mentionUserId.startsWith('U_') ? `{${key}}` : ticket.owner;\n  lines.push(`${index + 1}. [${ticket.priority}] ${ticket.title}`);\n  lines.push(`   負責：${ownerText}｜客戶：${ticket.customer || '未填'}`);\n  if (ticket.note) lines.push(`   ${ticket.note.slice(0, 60)}`);\n\n  if (ownerText === `{${key}}`) {\n    substitution[key] = {\n      type: 'mention',\n      mentionee: { type: 'user', userId: ticket.mentionUserId },\n    };\n  }\n});\n\nconst message = Object.keys(substitution).length\n  ? { type: 'textV2', text: lines.join('\\n'), substitution }\n  : { type: 'text', text: lines.join('\\n') };\n\nreturn [{ json: { messages: [message] } }];"
+      },
+      "id": "Build Group Todo Reply",
+      "name": "Build Group Todo Reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [720, -120]
+    }
+  ],
+  "connections": {
+    "Detect Group Mention Todo Query": {
+      "main": [[{ "node": "If Group Todo Query", "type": "main", "index": 0 }]]
+    },
+    "If Group Todo Query": {
+      "main": [[{ "node": "Query Today Tickets", "type": "main", "index": 0 }]]
+    },
+    "Query Today Tickets": {
+      "main": [[{ "node": "Build Group Todo Reply", "type": "main", "index": 0 }]]
+    }
+  }
+}

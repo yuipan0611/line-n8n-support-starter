@@ -1,0 +1,62 @@
+{
+  "name": "Demo Fruit Shop LINE 群組 ID 登錄 Branch",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "const event = $json.event || $json.body?.events?.[0] || $json.events?.[0] || $json;\nconst source = event.source || {};\nconst message = event.message || {};\nconst groupId = source.groupId || source.roomId || '';\nconst isGroup = source.type === 'group' || source.type === 'room';\n\nif (!isGroup || !groupId) {\n  return [];\n}\n\nreturn [{\n  json: {\n    groupId,\n    groupName: source.type === 'group' ? '待確認 LINE 群組' : '待確認 LINE Room',\n    groupType: '工作群組',\n    status: '停用',\n    purposes: [],\n    lastMessageAt: event.timestamp ? new Date(event.timestamp).toISOString() : new Date().toISOString(),\n    lastMessageSummary: message.text || message.type || '非文字訊息',\n    lastUserId: source.userId || '',\n  },\n}];"
+      },
+      "id": "Build Group Registry Record",
+      "name": "Build Group Registry Record",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.notion.com/v1/pages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ parent: { database_id: $env.NOTION_LINE_GROUPS_DATABASE_ID }, properties: { '群組名稱': { title: [{ text: { content: $json.groupName } }] }, 'Group ID': { rich_text: [{ text: { content: $json.groupId } }] }, '群組類型': { select: { name: $json.groupType } }, '狀態': { status: { name: $json.status } }, '用途': { multi_select: $json.purposes.map(name => ({ name })) }, '最後訊息時間': { date: { start: $json.lastMessageAt } }, '最後訊息摘要': { rich_text: [{ text: { content: $json.lastMessageSummary } }] }, '最後發話 User ID': { rich_text: $json.lastUserId ? [{ text: { content: $json.lastUserId } }] : [] } } }) }}"
+      },
+      "id": "Create LINE Group Registry",
+      "name": "Create LINE Group Registry",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        840,
+        420
+      ],
+      "notes": "Assign existing Notion bearer credential. New groups are created as 停用 with no purpose; manually approve a group by setting 狀態=啟用 and 用途=工單通知. This simple version creates a row each time the OA receives a group message; later it can be changed to upsert by Group ID."
+    }
+  ],
+  "connections": {
+    "Build Group Registry Record": {
+      "main": [
+        [
+          {
+            "node": "Create LINE Group Registry",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

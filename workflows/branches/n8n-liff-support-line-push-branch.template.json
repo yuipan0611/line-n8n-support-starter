@@ -1,0 +1,58 @@
+{
+  "name": "Demo Fruit Shop LIFF 工單 LINE 群組通知 Branch",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "const ticket = $json.body || $json;\nconst notification = ticket.notification || {};\nconst groupId = notification.lineGroupId || ticket.lineGroupId || '';\nconst mentionUserIds = notification.mentionUserIds || [];\nconst shouldMention = Boolean(notification.shouldMention && mentionUserIds.length);\n\nif (!groupId) {\n  return [];\n}\n\nconst lines = [\n  ticket.urgency === '急件' ? '急件工單' : '人工工單',\n  `類型：${ticket.topic || '未填'}`,\n  `客戶：${ticket.customerName || '未填'}`,\n  `聯絡人：${[ticket.contactPerson, ticket.phone].filter(Boolean).join(' ') || '未填'}`,\n  ticket.relatedOrderId ? `訂單：${ticket.relatedOrderId}` : '',\n  `內容：${ticket.message || '未填'}`,\n  `工單：${ticket.requestId || '未填'}`,\n].filter(Boolean);\n\nif (!shouldMention) {\n  return [{\n    json: {\n      to: groupId,\n      messages: [{ type: 'text', text: lines.join('\\n') }],\n    },\n  }];\n}\n\nconst substitution = {};\nconst mentionTokens = mentionUserIds.map((userId, index) => {\n  const key = `u${index + 1}`;\n  substitution[key] = { type: 'mention', mentionee: { type: 'user', userId } };\n  return `{${key}}`;\n});\n\nreturn [{\n  json: {\n    to: groupId,\n    messages: [{\n      type: 'textV2',\n      text: `${mentionTokens.join(' ')}\\n${lines.join('\\n')}`,\n      substitution,\n    }],\n  },\n}];"
+      },
+      "id": "Build LINE Group Message",
+      "name": "Build LINE Group Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        620,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.line.me/v2/bot/message/push",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ to: $json.to, messages: $json.messages }) }}"
+      },
+      "id": "Push To LINE Group",
+      "name": "Push To LINE Group",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        900,
+        260
+      ],
+      "notes": "Assign existing LINE Messaging API bearer credential. This node expects $json.to and $json.messages from Build LINE Group Message."
+    }
+  ],
+  "connections": {
+    "Build LINE Group Message": {
+      "main": [
+        [
+          {
+            "node": "Push To LINE Group",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

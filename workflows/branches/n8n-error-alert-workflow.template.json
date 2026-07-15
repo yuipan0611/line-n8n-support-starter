@@ -1,0 +1,81 @@
+{
+  "name": "Demo Fruit Shop LINE 客服助手 - Error Alerts",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "Error Trigger",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const execution = $json.execution || {};\nconst workflow = $json.workflow || {};\nconst lastNode = execution.lastNodeExecuted || 'unknown node';\nconst error = execution.error || {};\nconst message = error.message || $json.message || 'Unknown n8n error';\nconst executionUrl = execution.url || 'Open n8n Executions';\n\nreturn [\n  {\n    json: {\n      to: 'LINE_PUSH_USER_ID_OR_GROUP_ID',\n      messages: [\n        {\n          type: 'text',\n          text: [\n            'Demo Fruit Shop LINE 客服助手失敗通知',\n            `Workflow: ${workflow.name || workflow.id || 'unknown'}`,\n            `Node: ${lastNode}`,\n            `Error: ${message}`,\n            `Execution: ${executionUrl}`,\n          ].join('\\n'),\n        },\n      ],\n    },\n  },\n];"
+      },
+      "id": "Build LINE alert",
+      "name": "Build LINE alert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [240, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.line.me/v2/bot/message/push",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{$json}}"
+      },
+      "id": "Push LINE alert",
+      "name": "Push LINE alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [500, 0],
+      "notes": "Assign the LINE Messaging API bearer credential before activating."
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Build LINE alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build LINE alert": {
+      "main": [
+        [
+          {
+            "node": "Push LINE alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "versionId": "template",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

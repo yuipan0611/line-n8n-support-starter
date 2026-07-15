@@ -1,0 +1,89 @@
+{
+  "size": {
+    "width": 1535,
+    "height": 1024
+  },
+  "selected": true,
+  "name": "Demo Fruit Shop LIFF Menu",
+  "chatBarText": "示範果舖選單",
+  "areas": [
+    {
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 511,
+        "height": 512
+      },
+      "action": {
+        "type": "uri",
+        "label": "商品訂購",
+        "uri": "https://your-app.vercel.app/liff/products"
+      }
+    },
+    {
+      "bounds": {
+        "x": 511,
+        "y": 0,
+        "width": 511,
+        "height": 512
+      },
+      "action": {
+        "type": "uri",
+        "label": "購物車",
+        "uri": "https://your-app.vercel.app/liff/cart"
+      }
+    },
+    {
+      "bounds": {
+        "x": 1022,
+        "y": 0,
+        "width": 513,
+        "height": 512
+      },
+      "action": {
+        "type": "uri",
+        "label": "訂單查詢",
+        "uri": "https://your-app.vercel.app/liff/orders"
+      }
+    },
+    {
+      "bounds": {
+        "x": 0,
+        "y": 512,
+        "width": 511,
+        "height": 512
+      },
+      "action": {
+        "type": "uri",
+        "label": "會員資料",
+        "uri": "https://your-app.vercel.app/liff/member"
+      }
+    },
+    {
+      "bounds": {
+        "x": 511,
+        "y": 512,
+        "width": 511,
+        "height": 512
+      },
+      "action": {
+        "type": "message",
+        "label": "配送規則",
+        "text": "請問配送時間和運費怎麼算？"
+      }
+    },
+    {
+      "bounds": {
+        "x": 1022,
+        "y": 512,
+        "width": 513,
+        "height": 512
+      },
+      "action": {
+        "type": "uri",
+        "label": "人工工單",
+        "uri": "https://your-app.vercel.app/liff/support"
+      }
+    }
+  ]
+}
