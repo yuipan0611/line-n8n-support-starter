@@ -13,6 +13,12 @@
 - 🔄 **編輯庫 → 正式庫同步** — 客戶自由編輯 Notion 編輯庫；n8n「守門員」workflow 驗證後才同步到系統讀取的正式庫，壞資料永遠進不了 production
 - 🔐 **Webhook 簽章工具** — 本地測試器 + 以 LINE 官方文件範例為準的單元測試
 
+<p align="center">
+  <img src="docs/images/liff-products.png" width="30%" alt="LIFF 商品頁（mock 模式）" />
+  <img src="docs/images/liff-cart.png" width="30%" alt="LIFF 購物車與運費計算" />
+  <img src="docs/images/liff-support.png" width="30%" alt="LIFF 人工工單表單" />
+</p>
+
 ## 5 分鐘試玩（不需任何帳號）
 
 ```bash

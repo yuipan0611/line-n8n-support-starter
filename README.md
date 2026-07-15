@@ -25,6 +25,12 @@ flowchart LR
     B -- Flex card --> G[LINE work group]
 ```
 
+<p align="center">
+  <img src="docs/images/liff-products.png" width="30%" alt="LIFF products page (mock mode)" />
+  <img src="docs/images/liff-cart.png" width="30%" alt="LIFF cart with delivery-fee calculation" />
+  <img src="docs/images/liff-support.png" width="30%" alt="LIFF support-ticket form" />
+</p>
+
 ## Try it in 5 minutes (no accounts needed)
 
 ```bash
